@@ -1,12 +1,10 @@
 require('dotenv').config();
+const express = require('express');
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log('Server running on port', PORT);
-});
 
-const express = require('express');
+
 const cron = require('node-cron');
 const twilio = require('twilio');
 const { createClient } = require('@supabase/supabase-js');
@@ -29,6 +27,10 @@ const supabase = createClient(
 
 // ================== EXPRESS ==================
 const app = express();
+app.listen(PORT, () => {
+    console.log('Server running on port', PORT);
+  });
+  
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
