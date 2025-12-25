@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>FREE STYLE — Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f0f0f;
+      color: #f5f5f5;
+    }
+
+    /* ===== LOGIN ===== */
+    #loginBox {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      background: #151515;
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(255, 0, 60, 0.25);
+    }
+
+    .login-card h1 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 15px;
+      background: #1f1f1f;
+      color: white;
+    }
+
+    .login-card button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      background: #e1063a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .error {
+      margin-top: 10px;
+      color: #ff6b6b;
+    }
+
+    /* ===== ADMIN ===== */
+    #adminPanel {
+      display: none;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 3px;
+    }
+
+    .header span {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .btn-main {
+      background: #e1063a;
+      color: white;
+    }
+
+    .btn-dark {
+      background: #222;
+      color: white;
+    }
+
+    .btn-green {
+      background: #1db954;
+      color: black;
+    }
+
+    /* ===== QUEUE ===== */
+    .queue-title {
+      margin: 25px 0 10px;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+
+    .queue {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .queue li {
+      background: #151515;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .client-info {
+      font-size: 14px;
+    }
+
+    .client-info strong {
+      font-size: 16px;
+    }
+
+    .priority {
+      color: #ff9800;
+      font-weight: bold;
+    }
+
+    .btn-priority {
+      background: #ff9800;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .footer-msg {
+      margin-top: 15px;
+      font-size: 14px;
+      opacity: 0.8;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- 🔐 LOGIN -->
+<div id="loginBox">
+  <div class="login-card">
+    <h1>FREE STYLE</h1>
+    <input type="password" id="adminCode" placeholder="Code gérant">
+    <button onclick="login()">Entrer</button>
+    <div id="loginError" class="error"></div>
+  </div>
+</div>
+
+<!-- 💈 ADMIN -->
+<div id="adminPanel">
+
+  <div class="header">
+    <h1>FREE STYLE</h1>
+    <span>Gestion de la file</span>
+  </div>
+
+  <button id="botToggle" class="btn btn-dark" onclick="toggleBot()">
+    🔴 Mettre le bot en pause
+  </button>
+
+  <button class="btn btn-main" onclick="callNext()">
+    ⏭️ Client suivant
+  </button>
+
+  <div class="queue-title">📋 En attente</div>
+  <ul id="queueList" class="queue"></ul>
+
+  <div id="result" class="footer-msg">—</div>
+</div>
+
+<script>
+  const adminCodeKey = 'adminCode';
+
+  function headers() {
+    return { 'x-admin-code': localStorage.getItem(adminCodeKey) };
+  }
+
+  function login() {
+    const code = document.getElementById('adminCode').value;
+
+    fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        document.getElementById('loginError').innerText = 'Code incorrect';
+        return;
+      }
+      localStorage.setItem(adminCodeKey, code);
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      loadBotStatus();
+      loadQueue();
+    });
+  }
+
+  async function loadBotStatus() {
+    const res = await fetch('/bot/status', { headers: headers() });
+    const data = await res.json();
+    const btn = document.getElementById('botToggle');
+
+    if (data.bot_active) {
+      btn.innerText = '🔴 Mettre le bot en pause';
+      btn.className = 'btn btn-dark';
+    } else {
+      btn.innerText = '🟢 Réactiver le bot';
+      btn.className = 'btn btn-green';
+    }
+  }
+
+  async function toggleBot() {
+    await fetch('/bot/toggle', { method: 'POST', headers: headers() });
+    loadBotStatus();
+  }
+
+  async function loadQueue() {
+    const res = await fetch('/queue', { headers: headers() });
+    const queue = await res.json();
+    const list = document.getElementById('queueList');
+    list.innerHTML = '';
+
+    if (!queue || queue.length === 0) {
+      list.innerHTML = '<li>Aucun client</li>';
+      return;
+    }
+
+    queue.forEach(c => {
+      const li = document.createElement('li');
+
+      const info = document.createElement('div');
+      info.className = 'client-info';
+      info.innerHTML = `
+        <strong>#${c.position}</strong> ${c.phone}<br>
+        ⏳ ~${c.estimatedMinutes} min ${c.priority ? '<span class="priority">⚡</span>' : ''}
+      `;
+
+      const actions = document.createElement('div');
+      if (!c.priority) {
+        const btn = document.createElement('button');
+        btn.className = 'btn-priority';
+        btn.innerText = '⚡';
+        btn.onclick = () => setPriority(c.id);
+        actions.appendChild(btn);
+      }
+
+      li.appendChild(info);
+      li.appendChild(actions);
+      list.appendChild(li);
+    });
+  }
+
+  async function callNext() {
+    const res = await fetch('/next', { method: 'POST', headers: headers() });
+    const data = await res.json();
+    document.getElementById('result').innerText = data.reply;
+    loadQueue();
+  }
+
+  async function setPriority(id) {
+    await fetch(`/priority/${id}`, { method: 'POST', headers: headers() });
+    loadQueue();
+  }
+
+  setInterval(() => {
+    if (localStorage.getItem(adminCodeKey)) {
+      loadQueue();
+    }
+  }, 10000);
+</script>
+
+</body>
+</html>
